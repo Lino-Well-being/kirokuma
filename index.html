@@ -801,7 +801,7 @@ async function drawCard(checks, note) {
   }
   ctx.font = '500 38px "Zen Maru Gothic", sans-serif';
   ctx.fillStyle = inkLight;
-  ctx.fillText(`${state.name} の きょうのきろく`, W / 2, cardY + 193);
+  ctx.fillText(`${state.name} 今日のおうち英語きろく`, W / 2, cardY + 193);
 
   // マスコット（チェックしたアクションから日替わりで1枚。なしの日は顔）
   const doneKinds = ACTION_KINDS.filter((_, i) => checks[i]);
