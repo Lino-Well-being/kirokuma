@@ -110,6 +110,7 @@
     margin-bottom: 18px;
   }
   .kuma-says .face { width: 52px; height: 52px; flex-shrink: 0; }
+  .kuma-says .face.big { width: 84px; height: 84px; }
   .kuma-says .face img { width: 100%; height: 100%; object-fit: contain; }
   .kuma-says .bubble {
     background: var(--card);
@@ -382,7 +383,7 @@
     <p class="subtitle">1日30秒、わが子の「できた」をみつける記録帳。</p>
 
     <div class="kuma-says">
-      <div class="face" id="setupFace"></div>
+      <div class="face big" id="setupFace"></div>
       <div class="bubble">
         はじめまして、くま先生です。<br>
         チェックはゆるく4つだけ。<br>
@@ -404,6 +405,7 @@
     </div>
 
     <button class="btn" id="startBtn">きろくを はじめる</button>
+    <footer>© 2026 おうち英語キズナClub</footer>
   </section>
 
   <!-- ===== ホーム（今日の記録） ===== -->
@@ -440,7 +442,7 @@
       <a href="#" id="lineLink" target="_blank" rel="noopener">くま先生の公式LINEはこちら</a>
     </div>
 
-    <footer>きろくま — おうち英語キズナClub｜ちほ先生<br>#きろくま #おうち英語きろく</footer>
+    <footer>きろくま — おうち英語キズナClub｜ちほ先生<br>#きろくま #おうち英語きろく<br>© 2026 おうち英語キズナClub</footer>
   </section>
 
   <!-- ===== カレンダー ===== -->
@@ -457,6 +459,7 @@
       <div class="cal-summary" id="calSummary"></div>
     </div>
     <button class="btn sub" id="backHomeBtn">きょうのきろくに もどる</button>
+    <footer>© 2026 おうち英語キズナClub</footer>
   </section>
 
 </div>
@@ -569,7 +572,7 @@ function renderSetup() {
     div.onclick = () => { pickedRibbon = val; renderSetup(); };
     rrow.appendChild(div);
   });
-  document.getElementById("setupFace").innerHTML = `<img src="${MASCOT_IMG.kuma.face}" alt="">`;
+  document.getElementById("setupFace").innerHTML = `<img src="${SENSEI_IMG}" alt="">`;
   nameEl.value = keep || state.name || "";
 }
 
@@ -589,9 +592,10 @@ const DOW = ["にち", "げつ", "か", "すい", "もく", "きん", "ど"];
 let todayChecks = [false, false, false, false];
 
 function streakInfo() {
-  // 連続日数（今日を含む）と、直前に空きがあったか
+  // 連続日数と、直前に空きがあったか。今日が未記録なら昨日までの連続を数える
   let streak = 0;
   const d = new Date();
+  if (!state.records[todayKey(d)]) d.setDate(d.getDate() - 1);
   for (;;) {
     if (state.records[todayKey(d)]) {
       streak++;
@@ -605,11 +609,42 @@ function streakInfo() {
   return { streak, total, gap };
 }
 
+// 節目のしるし: 10,20,30…=🎊 ／ 5,15,25…=🎉
+function milestoneMark(streak) {
+  if (streak > 1 && streak % 10 === 0) return "🎊";
+  if (streak > 1 && streak % 5 === 0) return "🎉";
+  return "";
+}
+
 function greeting() {
   const { streak, total, gap } = streakInfo();
   const n = state.name;
   if (total === 0) return `${n}の きろく、きょうから いっしょに はじめようね。`;
-  if (gap) return `おかえりなさい。とまっても だいじょうぶ、ゼロには なっていないよ。また きょうから ね。`;
+  if (gap) {
+    const msgs = [
+      `🌱 おかえりなさい！また いっしょに はじめようね。とまっても ゼロには なっていないよ。`,
+      `🌱 おかえりなさい！${n}との きろく、きょうから また そだてていこうね。`,
+      `🌱 おかえりなさい！あいだが あいても だいじょうぶ。ここから また いっしょに ね。`,
+    ];
+    return msgs[new Date().getDate() % msgs.length];
+  }
+  const mark = milestoneMark(streak);
+  if (mark === "🎊") {
+    const msgs = [
+      `🎊 れんぞく${streak}にち！がんばりじゃなくて、もう しゅうかんに なってきたね。`,
+      `🎊 れんぞく${streak}にち！ふりかえると ${n}との みちが ちゃんと できているよ。`,
+      `🎊 れんぞく${streak}にち！こつこつの きろくが こんなに たまったよ。`,
+    ];
+    return msgs[(streak / 10) % msgs.length];
+  }
+  if (mark === "🎉") {
+    const msgs = [
+      `🎉 れんぞく${streak}にち！ちいさな つみかさねが ちからに なっているよ。`,
+      `🎉 れんぞく${streak}にち！ママと ${n}の ペースが できてきた しるしだね。`,
+      `🎉 れんぞく${streak}にち！きょうの 1ページも たいせつな たからもの。`,
+    ];
+    return msgs[Math.floor(streak / 5) % msgs.length];
+  }
   if (streak >= 7) return `${streak}にち つづいているね。${n}との じかんが つみかさなっているよ。`;
   if (streak >= 2) return `${streak}にちめ。きょうも ${n}の「できた」を いっしょに みつけよう。`;
   return `きょうも ${n}の「できた」を ひとつ みつけに いこう。`;
@@ -621,8 +656,9 @@ function renderHome() {
     `${now.getMonth() + 1}がつ ${now.getDate()}にち（${DOW[now.getDay()]}）`;
 
   const { streak, total } = streakInfo();
+  const mark = milestoneMark(streak);
   document.getElementById("streakLabel").textContent =
-    total > 0 ? `きろく ${total}にち ／ れんぞく ${Math.max(streak, 0)}にち` : "";
+    total > 0 ? `きろく ${total}にち ／ れんぞく ${Math.max(streak, 0)}にち${mark ? " " + mark : ""}` : "";
 
   document.getElementById("homeFace").innerHTML = mascotImgTag();
   document.getElementById("homeGreeting").textContent = greeting();
@@ -744,19 +780,36 @@ async function drawCard(checks, note) {
   ctx.fillStyle = ink;
   ctx.textAlign = "center";
   ctx.font = '700 58px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(`${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`, W / 2, cardY + 115);
+  ctx.fillText(`${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`, W / 2, cardY + 140);
+
+  // お祝いバッジ（節目の連続記録・おかえりの日をカードに焼き込む）
+  const si = streakInfo(); // 今日の記録は保存済みなのでstreakに今日が含まれる
+  let badge = null;
+  const bMark = milestoneMark(si.streak);
+  if (bMark) badge = `${bMark} れんぞく${si.streak}にち！`;
+  else if (si.streak === 1 && si.total > 1) badge = "🌱 おかえりの ひ";
+  if (badge) {
+    ctx.save();
+    ctx.translate(cardX + 55, cardY + 72);
+    ctx.rotate(-0.05);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#D98E8E";
+    ctx.font = '700 38px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(badge, 0, 0);
+    ctx.restore();
+  }
   ctx.font = '500 38px "Zen Maru Gothic", sans-serif';
   ctx.fillStyle = inkLight;
-  ctx.fillText(`${state.name} の きょうのきろく`, W / 2, cardY + 168);
+  ctx.fillText(`${state.name} の きょうのきろく`, W / 2, cardY + 193);
 
   // マスコット（チェックしたアクションから日替わりで1枚。なしの日は顔）
   const doneKinds = ACTION_KINDS.filter((_, i) => checks[i]);
   const kind = doneKinds.length ? doneKinds[now.getDate() % doneKinds.length] : null;
   const mImg = await loadImage(mascotSrc(null, kind));
   if (kind) {
-    ctx.drawImage(mImg, W / 2 - 210, cardY + 185, 420, 420);
+    ctx.drawImage(mImg, W / 2 - 210, cardY + 210, 420, 420);
   } else {
-    ctx.drawImage(mImg, W / 2 - 200, cardY + 195, 400, 400);
+    ctx.drawImage(mImg, W / 2 - 200, cardY + 215, 400, 400);
   }
 
   // 一言日記エリアはカード下部に固定し、チェック欄は2列グリッドで間に収める
