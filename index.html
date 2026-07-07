@@ -110,6 +110,7 @@
     margin-bottom: 18px;
   }
   .kuma-says .face { width: 52px; height: 52px; flex-shrink: 0; }
+  .kuma-says .face.big { width: 84px; height: 84px; }
   .kuma-says .face img { width: 100%; height: 100%; object-fit: contain; }
   .kuma-says .bubble {
     background: var(--card);
@@ -382,7 +383,7 @@
     <p class="subtitle">1日30秒、わが子の「できた」をみつける記録帳。</p>
 
     <div class="kuma-says">
-      <div class="face" id="setupFace"></div>
+      <div class="face big" id="setupFace"></div>
       <div class="bubble">
         はじめまして、くま先生です。<br>
         チェックはゆるく4つだけ。<br>
@@ -404,6 +405,7 @@
     </div>
 
     <button class="btn" id="startBtn">きろくを はじめる</button>
+    <footer>© 2026 おうち英語キズナClub</footer>
   </section>
 
   <!-- ===== ホーム（今日の記録） ===== -->
@@ -440,7 +442,7 @@
       <a href="#" id="lineLink" target="_blank" rel="noopener">くま先生の公式LINEはこちら</a>
     </div>
 
-    <footer>きろくま — おうち英語キズナClub｜ちほ先生<br>#きろくま #おうち英語きろく</footer>
+    <footer>きろくま — おうち英語キズナClub｜ちほ先生<br>#きろくま #おうち英語きろく<br>© 2026 おうち英語キズナClub</footer>
   </section>
 
   <!-- ===== カレンダー ===== -->
@@ -457,6 +459,7 @@
       <div class="cal-summary" id="calSummary"></div>
     </div>
     <button class="btn sub" id="backHomeBtn">きょうのきろくに もどる</button>
+    <footer>© 2026 おうち英語キズナClub</footer>
   </section>
 
 </div>
@@ -569,7 +572,7 @@ function renderSetup() {
     div.onclick = () => { pickedRibbon = val; renderSetup(); };
     rrow.appendChild(div);
   });
-  document.getElementById("setupFace").innerHTML = `<img src="${MASCOT_IMG.kuma.face}" alt="">`;
+  document.getElementById("setupFace").innerHTML = `<img src="${SENSEI_IMG}" alt="">`;
   nameEl.value = keep || state.name || "";
 }
 
