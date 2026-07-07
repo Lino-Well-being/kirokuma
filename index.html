@@ -588,7 +588,8 @@ document.getElementById("startBtn").onclick = () => {
 };
 
 /* ================= ホーム ================= */
-const DOW = ["にち", "げつ", "か", "すい", "もく", "きん", "ど"];
+const EN_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const EN_DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 let todayChecks = [false, false, false, false];
 
 function streakInfo() {
@@ -653,7 +654,7 @@ function greeting() {
 function renderHome() {
   const now = new Date();
   document.getElementById("todayLabel").textContent =
-    `${now.getMonth() + 1}がつ ${now.getDate()}にち（${DOW[now.getDay()]}）`;
+    `${EN_MONTHS[now.getMonth()]} ${now.getDate()} (${EN_DOW[now.getDay()]})`;
 
   const { streak, total } = streakInfo();
   const mark = milestoneMark(streak);
@@ -780,7 +781,7 @@ async function drawCard(checks, note) {
   ctx.fillStyle = ink;
   ctx.textAlign = "center";
   ctx.font = '700 58px "Zen Maru Gothic", sans-serif';
-  ctx.fillText(`${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`, W / 2, cardY + 140);
+  ctx.fillText(`${EN_MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`, W / 2, cardY + 140);
 
   // お祝いバッジ（節目の連続記録・おかえりの日をカードに焼き込む）
   const si = streakInfo(); // 今日の記録は保存済みなのでstreakに今日が含まれる
@@ -969,10 +970,10 @@ document.getElementById("calPrev").onclick = () => { calMonth--; if (calMonth < 
 document.getElementById("calNext").onclick = () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCal(); };
 
 function renderCal() {
-  document.getElementById("calMonth").textContent = `${calYear}ねん ${calMonth + 1}がつ`;
+  document.getElementById("calMonth").textContent = `${EN_MONTHS[calMonth]} ${calYear}`;
   const grid = document.getElementById("calGrid");
   grid.innerHTML = "";
-  ["にち","げつ","か","すい","もく","きん","ど"].forEach((d) => {
+  ["SUN","MON","TUE","WED","THU","FRI","SAT"].forEach((d) => {
     const el = document.createElement("div");
     el.className = "cal-dow";
     el.textContent = d;
