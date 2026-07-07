@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>きろくま｜1日30秒、わが子の「できた」をみつける記録帳</title>
-<meta name="description" content="1日30秒、わが子の「できた」をみつける記録帳。チェックはゆるく4つだけ。今日みつけた小さな成長が、かわいいカードになって残ります。">
+<title>きろくま｜1日30秒のおうち英語きろく帳</title>
+<meta name="description" content="おうち英語の毎日を1日30秒で記録。チェックはゆるく4つだけ。今日みつけたわが子の小さな成長が、かわいいカードになって残ります。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Yomogi&display=swap" rel="stylesheet">
@@ -174,6 +174,13 @@
   .home-head {
     text-align: center;
     margin-bottom: 14px;
+  }
+  .app-brand {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-light);
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
   }
   .home-head .date {
     font-size: 18px;
@@ -380,12 +387,13 @@
   <!-- ===== セットアップ ===== -->
   <section id="screen-setup" class="screen">
     <h1>きろくま</h1>
-    <p class="subtitle">1日30秒、わが子の「できた」をみつける記録帳。</p>
+    <p class="subtitle">1日30秒の おうち英語きろく帳。<br>わが子の「できた」をみつけて、かわいいカードに。</p>
 
     <div class="kuma-says">
       <div class="face big" id="setupFace"></div>
       <div class="bubble">
         はじめまして、くま先生です。<br>
+        まいにちの おうち英語を いっしょに きろくしましょう。<br>
         チェックはゆるく4つだけ。<br>
         さいごに今日みつけた小さな成長を1行。<br>
         かわいいカードになって残りますよ。
@@ -411,6 +419,7 @@
   <!-- ===== ホーム（今日の記録） ===== -->
   <section id="screen-home" class="screen">
     <div class="home-head">
+      <div class="app-brand">🧸 おうち英語きろく帳 きろくま</div>
       <div class="date" id="todayLabel"></div>
       <div class="streak" id="streakLabel"></div>
     </div>
@@ -447,7 +456,7 @@
 
   <!-- ===== カレンダー ===== -->
   <section id="screen-history" class="screen">
-    <h1 style="font-size:19px; margin-bottom:14px;">これまでのきろく</h1>
+    <h1 style="font-size:19px; margin-bottom:14px;">これまでの おうち英語きろく</h1>
     <div class="paper-card">
       <div class="tape mint"></div>
       <div class="cal-head" style="margin-top:6px;">
