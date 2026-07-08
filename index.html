@@ -356,6 +356,62 @@
     margin-top: 16px;
   }
 
+  /* ---------- プレゼント・きせかえ ---------- */
+  .gift-banner {
+    display: none;
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    background: #FDF3F0;
+    border: 2px dashed var(--accent);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 13px 14px;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+  .gift-banner.show { display: block; }
+  .gift-box {
+    text-align: center;
+    padding: 10px 0 4px;
+  }
+  .gift-box .box-emoji {
+    font-size: 92px;
+    display: inline-block;
+  }
+  .gift-box.shake .box-emoji { animation: giftshake 0.7s ease-in-out infinite; }
+  @keyframes giftshake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-7deg) translateY(-2px); }
+    75% { transform: rotate(7deg) translateY(-2px); }
+  }
+  .gift-box .g-title { font-size: 16px; font-weight: 700; margin-top: 10px; }
+  .gift-box .g-item {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 12px 0 4px;
+  }
+  .gift-box .g-note { font-size: 12.5px; color: var(--ink-light); line-height: 1.8; }
+  .kise-section { margin-bottom: 16px; }
+  .kise-section .k-head { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: var(--card);
+    border: 2px solid var(--grid);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .chip.selected { border-color: var(--accent); background: #FDF3F0; }
+  .chip.locked { color: var(--ink-light); opacity: 0.65; cursor: default; }
+
   footer {
     text-align: center;
     margin-top: 30px;
@@ -429,6 +485,8 @@
       <div class="bubble" id="homeGreeting"></div>
     </div>
 
+    <button class="gift-banner" id="giftBanner">🎁 くませんせいから プレゼントが とどいているよ</button>
+
     <ul class="check-list" id="checkList"></ul>
 
     <div class="note-label">
@@ -444,6 +502,7 @@
 
     <div class="link-row">
       <button class="text-link" id="toHistoryBtn">これまでのきろく</button>
+      <button class="text-link" id="kisekaeBtn">きせかえ</button>
       <button class="text-link" id="editProfileBtn">せってい</button>
     </div>
 
@@ -471,6 +530,36 @@
     <footer>© 2026 おうち英語キズナClub</footer>
   </section>
 
+</div>
+
+<!-- ===== プレゼントモーダル ===== -->
+<div class="overlay" id="giftOverlay">
+  <div class="overlay-inner">
+    <div class="paper-card" style="margin-top:40px;">
+      <div class="tape yellow"></div>
+      <div class="gift-box shake" id="giftBox">
+        <span class="box-emoji" id="giftEmoji">🎁</span>
+        <div class="g-title" id="giftTitle"></div>
+        <div class="g-item" id="giftItem" style="display:none;"></div>
+        <div class="g-note" id="giftNote"></div>
+      </div>
+      <button class="btn" id="giftOpenBtn" style="margin-top:16px;">あける</button>
+      <button class="btn sub" id="giftCloseBtn" style="display:none; margin-top:12px;">ありがとう！</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== きせかえモーダル ===== -->
+<div class="overlay" id="kiseOverlay">
+  <div class="overlay-inner">
+    <div class="paper-card" style="margin-top:40px;">
+      <div class="tape mint"></div>
+      <h1 style="font-size:18px; margin:8px 0 4px;">カードの きせかえ</h1>
+      <p class="subtitle" style="margin-bottom:14px;">きろくが たまると くませんせいから<br>あたらしい きせかえが とどくよ</p>
+      <div id="kiseSections"></div>
+      <button class="btn" id="kiseCloseBtn">これで OK</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== カードモーダル ===== -->
@@ -512,13 +601,81 @@ function load() {
     if (raw) {
       const s = JSON.parse(raw);
       if (s.ribbon === undefined) s.ribbon = false;
+      if (!Array.isArray(s.opened)) s.opened = [];
+      if (!s.cardStyle) s.cardStyle = { tape: "pink", ink: "brown", frame: "none" };
+      if (!s.cardStyle.outfit) s.cardStyle.outfit = "none";
       return s;
     }
   } catch (e) {}
-  return { name: "", mascot: "kuma", ribbon: false, records: {} };
+  return { name: "", mascot: "kuma", ribbon: false, records: {},
+           opened: [], cardStyle: { tape: "pink", ink: "brown", frame: "none", outfit: "none" } };
 }
 function save() {
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+/* ================= プレゼント（累計きろく数で開く・途切れてもOK） ================= */
+const TAPES = {
+  pink:    { name: "ピンク むじ" },
+  dots:    { name: "みずたま ピンク" },
+  stripe:  { name: "しましま ミント" },
+  check:   { name: "チェック イエロー" },
+  rainbow: { name: "にじいろ" },
+};
+const INKS = {
+  brown:  { name: "ちゃいろ", color: "#6B4F3A" },
+  blue:   { name: "あおいろ", color: "#5A6B8C" },
+  enji:   { name: "えんじいろ", color: "#A0524D" },
+  midori: { name: "ふかみどり", color: "#4E6B51" },
+};
+const FRAMES = {
+  none: { name: "なし" },
+  gold: { name: "きんの がくぶち" },
+};
+const OUTFITS = {
+  none: { name: "なし" },
+  straw: { name: "むぎわらぼうし" },
+};
+const GIFTS = [
+  { at: 5,   type: "tape",   id: "dots",    label: "マステ「みずたま ピンク」", emoji: "🎀" },
+  { at: 10,  type: "ink",    id: "blue",    label: "インク「あおいろ」", emoji: "🖋️" },
+  { at: 15,  type: "tape",   id: "stripe",  label: "マステ「しましま ミント」", emoji: "🍃" },
+  { at: 20,  type: "ink",    id: "enji",    label: "インク「えんじいろ」", emoji: "🖋️" },
+  { at: 25,  type: "tape",   id: "check",   label: "マステ「チェック イエロー」", emoji: "🌼" },
+  { at: 30,  type: "title",  id: "tree",    label: "しょうごう「きろくの木」", emoji: "🌳" },
+  { at: 35,  type: "outfit", id: "straw",   label: "おようふく「むぎわらぼうし」", emoji: "👒" },
+  { at: 40,  type: "ink",    id: "midori",  label: "インク「ふかみどり」", emoji: "🖋️" },
+  { at: 50,  type: "frame",  id: "gold",    label: "きんの がくぶち", emoji: "🖼️" },
+  { at: 60,  type: "title",  id: "forest",  label: "しょうごう「きろくの森」", emoji: "🌲" },
+  { at: 75,  type: "tape",   id: "rainbow", label: "マステ「にじいろ」", emoji: "🌈" },
+  { at: 100, type: "title",  id: "takara",  label: "しょうごう「きろくの たからもの」", emoji: "💎" },
+];
+const TITLE_LABELS = { tree: "きろくの木 🌳", forest: "きろくの森 🌲", takara: "きろくの たからもの 💎" };
+
+function totalCount() {
+  return Object.keys(state.records).length;
+}
+function pendingGifts() {
+  const total = totalCount();
+  return GIFTS.filter((g) => total >= g.at && !state.opened.includes(g.at));
+}
+function nextGift() {
+  return GIFTS.find((g) => !state.opened.includes(g.at) && g.at > totalCount());
+}
+function unlockedIds(type, defaultId) {
+  const ids = defaultId ? [defaultId] : [];
+  GIFTS.forEach((g) => {
+    if (g.type === type && state.opened.includes(g.at)) ids.push(g.id);
+  });
+  return ids;
+}
+function currentTitle() {
+  // 開けたプレゼントのうち、いちばん上の称号
+  let label = null;
+  GIFTS.forEach((g) => {
+    if (g.type === "title" && state.opened.includes(g.at)) label = TITLE_LABELS[g.id];
+  });
+  return label;
 }
 
 function todayKey(d = new Date()) {
@@ -536,7 +693,15 @@ const MASCOTS = {
 };
 
 function mascotSrc(key, kind) {
-  const set = MASCOT_IMG[key || state.mascot];
+  const k = key || state.mascot;
+  // おようふく着用時は衣装セットを使う（リボンは衣装に統合）
+  const outfit = state.cardStyle && state.cardStyle.outfit;
+  if (outfit && outfit !== "none" && typeof OUTFIT_IMG !== "undefined" &&
+      OUTFIT_IMG[outfit] && OUTFIT_IMG[outfit][k]) {
+    const oset = OUTFIT_IMG[outfit][k];
+    return (kind && oset[kind]) ? oset[kind] : oset.face;
+  }
+  const set = MASCOT_IMG[k];
   if (kind && set[kind]) {
     return state.ribbon ? set[kind + "R"] : set[kind];
   }
@@ -667,8 +832,16 @@ function renderHome() {
 
   const { streak, total } = streakInfo();
   const mark = milestoneMark(streak);
-  document.getElementById("streakLabel").textContent =
-    total > 0 ? `きろく ${total}にち ／ れんぞく ${Math.max(streak, 0)}にち${mark ? " " + mark : ""}` : "";
+  const title = currentTitle();
+  const next = nextGift();
+  let label = total > 0 ? `きろく ${total}にち ／ れんぞく ${Math.max(streak, 0)}にち${mark ? " " + mark : ""}` : "";
+  if (label && title) label += ` ／ ${title}`;
+  if (label && next && !pendingGifts().length) label += `\nつぎのプレゼントまで あと${next.at - total}かい 🎁`;
+  const streakEl = document.getElementById("streakLabel");
+  streakEl.textContent = label;
+  streakEl.style.whiteSpace = "pre-line";
+
+  document.getElementById("giftBanner").classList.toggle("show", pendingGifts().length > 0);
 
   document.getElementById("homeFace").innerHTML = mascotImgTag();
   document.getElementById("homeGreeting").textContent = greeting();
@@ -706,6 +879,113 @@ noteInput.addEventListener("input", updateNoteCount);
 function updateNoteCount() {
   document.getElementById("noteCount").textContent = noteInput.value.length;
 }
+
+/* ================= プレゼントを あける ================= */
+let currentGift = null;
+function openGiftModal() {
+  const pending = pendingGifts();
+  if (!pending.length) return;
+  currentGift = pending[0];
+  document.getElementById("giftEmoji").textContent = "🎁";
+  document.getElementById("giftBox").classList.add("shake");
+  document.getElementById("giftTitle").textContent =
+    `${currentGift.at}かいも いいところを みつけたんだね。`;
+  document.getElementById("giftNote").textContent = "くませんせいから プレゼントだよ。";
+  const item = document.getElementById("giftItem");
+  item.style.display = "none";
+  document.getElementById("giftOpenBtn").style.display = "block";
+  document.getElementById("giftCloseBtn").style.display = "none";
+  document.getElementById("giftOverlay").classList.add("active");
+}
+
+document.getElementById("giftBanner").onclick = openGiftModal;
+
+document.getElementById("giftOpenBtn").onclick = () => {
+  if (!currentGift) return;
+  const g = currentGift;
+  state.opened.push(g.at);
+  // とどいた きせかえは そのまま つけてあげる（あとで きせかえ から変えられる）
+  if (g.type === "tape") state.cardStyle.tape = g.id;
+  if (g.type === "ink") state.cardStyle.ink = g.id;
+  if (g.type === "frame") state.cardStyle.frame = g.id;
+  if (g.type === "outfit") state.cardStyle.outfit = g.id;
+  save();
+  document.getElementById("giftBox").classList.remove("shake");
+  document.getElementById("giftEmoji").textContent = g.emoji;
+  const item = document.getElementById("giftItem");
+  item.textContent = g.label;
+  item.style.display = "block";
+  document.getElementById("giftNote").textContent =
+    g.type === "title"
+      ? "きょうから この なまえで よばせてね。"
+      : "つぎのカードから つかえるよ。「きせかえ」で いつでも 変えられるからね。";
+  document.getElementById("giftOpenBtn").style.display = "none";
+  document.getElementById("giftCloseBtn").style.display = "block";
+};
+
+document.getElementById("giftCloseBtn").onclick = () => {
+  document.getElementById("giftOverlay").classList.remove("active");
+  currentGift = null;
+  renderHome();
+  // まだ届いているプレゼントがあれば続けて開けられる
+  if (pendingGifts().length) setTimeout(openGiftModal, 250);
+};
+
+/* ================= きせかえ ================= */
+function renderKisekae() {
+  const total = totalCount();
+  const wrap = document.getElementById("kiseSections");
+  wrap.innerHTML = "";
+  const sections = [
+    { type: "outfit", head: "👒 おようふく", table: OUTFITS, def: "none", key: "outfit" },
+    { type: "tape", head: "🎀 マスキングテープ", table: TAPES, def: "pink", key: "tape" },
+    { type: "ink", head: "🖋️ インクの いろ", table: INKS, def: "brown", key: "ink" },
+    { type: "frame", head: "🖼️ がくぶち", table: FRAMES, def: "none", key: "frame" },
+  ];
+  sections.forEach((sec) => {
+    const div = document.createElement("div");
+    div.className = "kise-section";
+    div.innerHTML = `<div class="k-head">${sec.head}</div>`;
+    const row = document.createElement("div");
+    row.className = "chip-row";
+    const unlocked = unlockedIds(sec.type, sec.def);
+    Object.entries(sec.table).forEach(([id, item]) => {
+      const chip = document.createElement("button");
+      const isUnlocked = unlocked.includes(id);
+      const isSelected = state.cardStyle[sec.key] === id;
+      chip.className = "chip" + (isSelected ? " selected" : "") + (isUnlocked ? "" : " locked");
+      if (isUnlocked) {
+        chip.textContent = item.name;
+        chip.onclick = () => { state.cardStyle[sec.key] = id; save(); renderKisekae(); };
+      } else {
+        const gift = GIFTS.find((g) => g.type === sec.type && g.id === id);
+        chip.textContent = `🔒 あと${gift.at - total}かい`;
+      }
+      row.appendChild(chip);
+    });
+    div.appendChild(row);
+    wrap.appendChild(div);
+  });
+  // 称号セクション（自動でいちばん上がつく）
+  const tdiv = document.createElement("div");
+  tdiv.className = "kise-section";
+  const title = currentTitle();
+  const nextTitleGift = GIFTS.find((g) => g.type === "title" && !state.opened.includes(g.at));
+  tdiv.innerHTML =
+    `<div class="k-head">🏅 しょうごう</div>` +
+    `<div class="hint" style="margin-top:0;">${title ? "いまの しょうごう: " + title : "きろく30かいで さいしょの しょうごうが とどくよ"}` +
+    (nextTitleGift ? `<br>つぎは きろく${nextTitleGift.at}かいで「${TITLE_LABELS[nextTitleGift.id]}」` : "") +
+    `</div>`;
+  wrap.appendChild(tdiv);
+}
+
+document.getElementById("kisekaeBtn").onclick = () => {
+  renderKisekae();
+  document.getElementById("kiseOverlay").classList.add("active");
+};
+document.getElementById("kiseCloseBtn").onclick = () => {
+  document.getElementById("kiseOverlay").classList.remove("active");
+};
 
 /* ================= くま先生のひとこと ================= */
 function kumaComment(checks, note) {
@@ -774,23 +1054,44 @@ async function drawCard(checks, note) {
   ctx.fill();
   ctx.restore();
 
-  // マスキングテープ
-  ctx.save();
-  ctx.translate(W / 2, cardY + 8);
-  ctx.rotate(-0.04);
-  ctx.fillStyle = "rgba(242,196,196,0.9)";
-  ctx.fillRect(-130, -30, 260, 60);
-  ctx.restore();
+  // きんの がくぶち（アンロック式）
+  if (state.cardStyle.frame === "gold") {
+    ctx.strokeStyle = "#C9A227";
+    ctx.lineWidth = 10;
+    roundRect(cardX + 12, cardY + 12, cardW - 24, cardH - 24, 22);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    roundRect(cardX + 28, cardY + 28, cardW - 56, cardH - 56, 16);
+    ctx.stroke();
+  }
+
+  // マスキングテープ（きせかえ対応）
+  drawTape(state.cardStyle.tape, W / 2, cardY + 8);
 
   const ink = "#6B4F3A";
   const inkLight = "#9A7E64";
+  const penInk = (INKS[state.cardStyle.ink] || INKS.brown).color; // きせかえのインク色
 
   // 日付
   const now = new Date();
-  ctx.fillStyle = ink;
+  ctx.fillStyle = penInk;
   ctx.textAlign = "center";
   ctx.font = '700 58px "Zen Maru Gothic", sans-serif';
   ctx.fillText(`${EN_MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`, W / 2, cardY + 140);
+
+  // 称号スタンプ（右上・アンロック式）
+  const cardTitle = currentTitle();
+  if (cardTitle) {
+    ctx.save();
+    ctx.translate(cardX + cardW - 55, cardY + 72);
+    ctx.rotate(0.05);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#B8912F";
+    ctx.font = '700 34px "Zen Maru Gothic", sans-serif';
+    ctx.fillText(cardTitle, 0, 0);
+    ctx.restore();
+    ctx.textAlign = "center";
+  }
 
   // お祝いバッジ（節目の連続記録・おかえりの日をカードに焼き込む）
   const si = streakInfo(); // 今日の記録は保存済みなのでstreakに今日が含まれる
@@ -871,7 +1172,7 @@ async function drawCard(checks, note) {
     ctx.stroke();
   });
 
-  ctx.fillStyle = ink;
+  ctx.fillStyle = penInk;
   ctx.font = '400 50px "Yomogi", "Zen Maru Gothic", sans-serif';
   const text = note || "（きょうは かかない ひ）";
   // 単語（スペース区切り）の途中で切らずに2行へ折り返す
@@ -891,6 +1192,63 @@ async function drawCard(checks, note) {
   ctx.font = '500 30px "Zen Maru Gothic", sans-serif';
   ctx.fillStyle = inkLight;
   ctx.fillText(HASHTAGS, W / 2, H - 44);
+}
+
+// マスキングテープの柄を描く（きせかえ対応）
+function drawTape(styleId, cx, cy) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.04);
+  ctx.beginPath();
+  ctx.rect(-130, -30, 260, 60);
+  ctx.clip();
+  if (styleId === "stripe") {
+    ctx.fillStyle = "rgba(191,220,200,0.92)";
+    ctx.fillRect(-130, -30, 260, 60);
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    ctx.lineWidth = 9;
+    for (let x = -150; x <= 150; x += 28) {
+      ctx.beginPath();
+      ctx.moveTo(x, -32);
+      ctx.lineTo(x + 24, 32);
+      ctx.stroke();
+    }
+  } else if (styleId === "dots") {
+    ctx.fillStyle = "rgba(242,196,196,0.92)";
+    ctx.fillRect(-130, -30, 260, 60);
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    for (let x = -117; x <= 117; x += 36) {
+      for (let y = -15; y <= 15; y += 30) {
+        ctx.beginPath();
+        ctx.arc(x + (y > 0 ? 18 : 0), y, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  } else if (styleId === "check") {
+    ctx.fillStyle = "rgba(240,221,158,0.92)";
+    ctx.fillRect(-130, -30, 260, 60);
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.lineWidth = 7;
+    for (let x = -126; x <= 130; x += 32) {
+      ctx.beginPath(); ctx.moveTo(x, -32); ctx.lineTo(x, 32); ctx.stroke();
+    }
+    for (let y = -24; y <= 30; y += 24) {
+      ctx.beginPath(); ctx.moveTo(-132, y); ctx.lineTo(132, y); ctx.stroke();
+    }
+  } else if (styleId === "rainbow") {
+    const bands = ["#F2C4C4", "#F0DD9E", "#BFDCC8", "#B9CBE3", "#D9C4E3"];
+    bands.forEach((c, i) => {
+      ctx.fillStyle = c;
+      ctx.globalAlpha = 0.92;
+      ctx.fillRect(-130, -30 + i * 12, 260, 12);
+    });
+    ctx.globalAlpha = 1;
+  } else {
+    // pink（むじ・はじめから）
+    ctx.fillStyle = "rgba(242,196,196,0.9)";
+    ctx.fillRect(-130, -30, 260, 60);
+  }
+  ctx.restore();
 }
 
 function wrapNote(text, maxLen) {
@@ -937,6 +1295,8 @@ document.getElementById("makeCardBtn").onclick = async () => {
 document.getElementById("closeCardBtn").onclick = () => {
   document.getElementById("cardOverlay").classList.remove("active");
   renderHome(); // 連続日数などを更新
+  // きろくが節目に届いていたら、くま先生からのプレゼントを開く
+  if (pendingGifts().length) setTimeout(openGiftModal, 350);
 };
 
 function canvasBlob() {
