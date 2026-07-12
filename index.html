@@ -692,6 +692,24 @@ const MASCOTS = {
   neko: { name: "ねこ", stamp: "🐱" },
 };
 
+// カレンダーの「できた日」に貼るシール。日付ごとに固定のシールが選ばれるので、
+// 同じ日を何度見ても同じ絵柄（＝ランダムだけどブレない）で、日が増えるほど絵柄のバリエーションを楽しめる。
+const STICKERS = [
+  "🎀", "🐻", "🐰", "🐱", "😎", "🌟", "🧸", "🍓", "🌈", "🎈",
+  "🍩", "🦄", "🐥", "🍭", "☘️", "🐬", "🌸", "🍰", "🐧", "👑",
+  "🌙", "🐨", "🦋", "🎁", "⭐", "🐳", "🍬", "🐹", "🌻", "🍎",
+];
+
+function stickerForDate(key) {
+  // FNV-1aハッシュ：連続する日付でも絵柄が偏りなくバラける
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return STICKERS[(hash >>> 0) % STICKERS.length];
+}
+
 function mascotSrc(key, kind) {
   const k = key || state.mascot;
   // おようふく着用時は衣装セットを使う（リボンは衣装に統合）
@@ -1356,13 +1374,12 @@ function renderCal() {
     grid.appendChild(el);
   }
   const tk = todayKey();
-  const stamp = MASCOTS[state.mascot].stamp;
   for (let d = 1; d <= days; d++) {
     const key = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     const el = document.createElement("div");
     const rec = state.records[key];
     el.className = "cal-day" + (rec ? " recorded" : "") + (key === tk ? " today" : "");
-    el.innerHTML = rec ? `<span class="stamp">${stamp}</span><span>${d}</span>` : `<span>${d}</span>`;
+    el.innerHTML = rec ? `<span class="stamp">${stickerForDate(key)}</span><span>${d}</span>` : `<span>${d}</span>`;
     grid.appendChild(el);
   }
   const total = Object.keys(state.records).length;
