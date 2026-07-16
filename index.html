@@ -121,6 +121,10 @@
     line-height: 1.8;
     position: relative;
   }
+  .kuma-says .bubble .child-name {
+    font-weight: 700;
+    font-size: 1.15em;
+  }
   .kuma-says .bubble::before {
     content: "";
     position: absolute;
@@ -809,9 +813,16 @@ function milestoneMark(streak) {
   return "";
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 function greeting() {
   const { streak, total, gap } = streakInfo();
-  const n = state.name;
+  const nRaw = state.name;
+  const n = `<span class="child-name">${escapeHtml(nRaw)}</span>`;
   if (total === 0) return `${n}の きろく、きょうから いっしょに はじめようね。`;
   if (gap) {
     const msgs = [
@@ -862,7 +873,7 @@ function renderHome() {
   document.getElementById("giftBanner").classList.toggle("show", pendingGifts().length > 0);
 
   document.getElementById("homeFace").innerHTML = mascotImgTag();
-  document.getElementById("homeGreeting").textContent = greeting();
+  document.getElementById("homeGreeting").innerHTML = greeting();
 
   // 今日すでに記録があれば復元
   const rec = state.records[todayKey()];
@@ -1127,9 +1138,25 @@ async function drawCard(checks, note) {
     ctx.fillText(badge, 0, 0);
     ctx.restore();
   }
-  ctx.font = '500 38px "Zen Maru Gothic", sans-serif';
-  ctx.fillStyle = inkLight;
-  ctx.fillText(`${state.name} 今日のおうち英語きろく`, W / 2, cardY + 193);
+  {
+    const nameText = state.name;
+    const restText = " 今日のおうち英語きろく";
+    const nameFont = '700 46px "Zen Maru Gothic", sans-serif';
+    const restFont = '500 38px "Zen Maru Gothic", sans-serif';
+    ctx.font = nameFont;
+    const nameW = ctx.measureText(nameText).width;
+    ctx.font = restFont;
+    const restW = ctx.measureText(restText).width;
+    let x = W / 2 - (nameW + restW) / 2;
+    ctx.textAlign = "left";
+    ctx.font = nameFont;
+    ctx.fillStyle = inkLight;
+    ctx.fillText(nameText, x, cardY + 193);
+    x += nameW;
+    ctx.font = restFont;
+    ctx.fillText(restText, x, cardY + 193);
+    ctx.textAlign = "center";
+  }
 
   // マスコット（チェックしたアクションから日替わりで1枚。なしの日は顔）
   const doneKinds = ACTION_KINDS.filter((_, i) => checks[i]);
